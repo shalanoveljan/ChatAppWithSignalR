@@ -1,0 +1,166 @@
+﻿@model List<AppUser>
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
+
+<div class="container">
+    <div class="row clearfix">
+        <div class="col-lg-12">
+            <div class="card chat-app">
+                <div id="plist" class="people-list">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fa fa-search"></i></span>
+                        </div>
+                        <input type="hidden" id="UserIdd" name="ReciveUserId" value="" />
+                        <input type="text" class="form-control" placeholder="Search...">
+                    </div>
+                    <ul class="list-unstyled chat-list mt-2 mb-0">
+                        @foreach (AppUser user in Model)
+                        {
+                            <li id="@user.Id" class="clearfix user">
+                                <img src="https://bootdey.com/img/Content/avatar/avatar1.png" alt="avatar">
+                                <div class="about">
+                                    <div class="name">@user.FullName</div>
+                                    <div class="status user"> <i class="fa fa-circle @(user.CpnnectionId==null? "offline":"online")"></i> </div>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </div>
+                <div style="height:90vh; overflow-y:scroll" class="chat">
+                    <div class="chat-header clearfix">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <a href="javascript:void(0);" data-toggle="modal" data-target="#view_info">
+                                    <img src="https://bootdey.com/img/Content/avatar/avatar2.png" alt="avatar">
+                                </a>
+                                <div class="chat-about">
+                                    <h6 class="m-b-0">Aiden Chavez</h6>
+                                    <small>Last seen: 2 hours ago</small>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 hidden-sm text-right">
+                                @if (!User.Identity.IsAuthenticated)
+                                {
+                                    <a asp-controller="account" asp-action="login" class="btn btn-outline-secondary">Login</a>
+                                    <a asp-controller="account" asp-action="register" class="btn btn-outline-secondary">Register</a>
+                                }
+                                else
+                                {
+                                    <a asp-controller="account" asp-action="logout" class="btn btn-outline-secondary">Logout</a>
+                                }
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-history">
+                        <ul class=" asream m-b-0">
+                            @*<li class="clearfix">
+                        <div class="message-data text-right">
+                            <span class="message-data-time">10:10 AM, Today</span>
+                            <img src="https://bootdey.com/img/Content/avatar/avatar7.png" alt="avatar">
+                        </div>
+                        <div class="message other-message float-right"> Hi Aiden, how are you? How is the project coming along? </div>
+                    </li>*@
+
+                            @*<li class="clearfix">
+                        <div class="message-data">
+                            <span class="message-data-time">10:15 AM, Today</span>
+                        </div>
+                        <div class="message my-message">Project has been already finished and I have results to show you.</div>
+                    </li>*@
+                        </ul>
+                    </div>
+
+                </div>
+                <div class="chat-message clearfix">
+                    <div class="input-group mb-0">
+
+                        <div class="input-group-prepend">
+                            <span id="send" class="input-group-text"><i class="fa fa-send"></i></span>
+                        </div>
+                        <input id="message" type="text" class="form-control" placeholder="Enter text here...">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts{
+
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script>
+
+        var Connection = new signalR.HubConnectionBuilder().withUrl("/chathub").build()
+        Connection.start()
+
+
+
+        $("#send").click(function () {
+            let message = $("#message").val()
+            let reciveuserid = $("#UserIdd").val()
+            Connection.invoke("SendMessage", message, reciveuserid)
+
+        })
+        $("#message").val(" ")
+      
+        $(".user").click(function () {
+            let userid = $(this).attr("id")
+            let connectuserid = $("#UserIdd").val(userid)
+          
+        })
+
+        Connection.on("ReciveMessage", function (user,message) {
+            //console.log(`${message},${name}`)
+            let area = document.querySelector(".message")
+            let li = document.createElement("li")
+            li.className="clearfix"
+            li.innerHTML = `
+               <div class="message-data">
+                  <span class="message-data-time">${user} Today</span>
+                   </div>
+                  <div class="message my-message">${message}</div>
+              `
+            let asream = document.querySelector(".asream")
+            asream.append(li)
+        })
+
+        Connection.on("SendMessage", function (user, message) {
+            //console.log(`${message},${name}`)
+            let area = document.querySelector(".message")
+            let li = document.createElement("li")
+            li.className = "clearfix text-right"
+            li.innerHTML = `
+               <div class="message-data">
+                  <span class="message-data-time">${user} Today</span>
+                   </div>
+                  <div class="message my-message float-right">${message}</div>
+              `
+            let asream = document.querySelector(".asream")
+            asream.append(li)
+        })
+
+
+        Connection.on("UserConnected", function (Id) {
+
+            let user = document.getElementById(Id)
+            $(user).find("i").removeClass("offline")
+            $(user).find("i").addClass("online")
+
+        })
+        Connection.on("UserDisConnected", function (Id) {
+
+            let user = document.getElementById(Id)
+            $(user).find("i").removeClass("online")
+            $(user).find("i").addClass("offline")
+
+        })
+        
+
+
+    </script>
+
+}
